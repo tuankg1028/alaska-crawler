@@ -14,6 +14,9 @@ import requests
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+from queue import Queue
 
 
 class AlaskaProduct(BaseModel):
@@ -61,8 +64,8 @@ class AlaskaProduct(BaseModel):
 
 
 class AlaskaScraper:
-    def __init__(self, api_key: Optional[str] = None):
-        """Initialize the scraper with Firecrawl API key"""
+    def __init__(self, api_key: Optional[str] = None, max_workers: int = 5):
+        """Initialize the scraper with Firecrawl API key and worker count"""
         # Try to get API key from parameter, environment, or default to None
         if not api_key:
             api_key = os.getenv('FIRECRAWL_API_KEY')
@@ -76,11 +79,23 @@ class AlaskaScraper:
         
         self.base_url = "https://alaska.vn"
         self.products_url = "https://alaska.vn/product/"
-        self.session = requests.Session()
-        self.session.headers.update({
+        self.max_workers = max_workers
+        
+        # Create separate session for each worker to avoid conflicts
+        self.session_lock = threading.Lock()
+        self.rate_limiter = Queue(maxsize=max_workers)
+        # Initialize rate limiter
+        for _ in range(max_workers):
+            self.rate_limiter.put(1)
+        
+    def create_session(self):
+        """Create a new session for thread-safe requests"""
+        session = requests.Session()
+        session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
-        
+        return session
+
     def get_page_content(self, url: str) -> Optional[str]:
         """Get page content using Firecrawl or fallback to requests"""
         try:
@@ -95,6 +110,33 @@ class AlaskaScraper:
             print(f"Error fetching {url}: {e}")
             return None
     
+    def get_page_content_threadsafe(self, url: str) -> Optional[str]:
+        """Thread-safe version of get_page_content with rate limiting"""
+        # Rate limiting - wait for permission
+        self.rate_limiter.get()
+        
+        try:
+            if self.firecrawl:
+                result = self.firecrawl.scrape_url(url, params={'formats': ['html']})
+                content = result.get('html', '')
+            else:
+                session = self.create_session()
+                response = session.get(url, timeout=30)
+                response.raise_for_status()
+                content = response.text
+                session.close()
+            
+            # Add delay to respect server
+            time.sleep(0.5)
+            return content
+            
+        except Exception as e:
+            print(f"Error fetching {url}: {e}")
+            return None
+        finally:
+            # Release rate limiter
+            self.rate_limiter.put(1)
+
     def extract_product_urls_from_listing(self, page_url: str) -> List[str]:
         """Extract product URLs from a listing page"""
         content = self.get_page_content(page_url)
@@ -510,6 +552,65 @@ class AlaskaScraper:
         
         return product_data
     
+    def extract_product_details_parallel(self, product_url: str) -> Optional[Dict]:
+        """Thread-safe version of extract_product_details"""
+        print(f"Extracting details from: {product_url}")
+        
+        content = self.get_page_content_threadsafe(product_url)
+        if not content:
+            return None
+        
+        soup = BeautifulSoup(content, 'html.parser')
+        
+        # Extract product name
+        name = ""
+        title_selectors = ['h1', '.product-title', '.entry-title']
+        for selector in title_selectors:
+            element = soup.select_one(selector)
+            if element:
+                name = element.get_text(strip=True)
+                break
+        
+        # Fallback to page title
+        if not name:
+            title = soup.find('title')
+            if title:
+                name = title.get_text(strip=True).split('|')[0].split('-')[0].strip()
+        
+        # Extract all detailed information
+        category = self.extract_category(soup)
+        msp = self.extract_msp(soup, product_url)
+        prices = self.extract_prices(soup)
+        specifications = self.extract_specifications(soup)
+        features = self.extract_features(soup)
+        images = self.extract_images(soup)
+        short_description = self.extract_short_description(soup)
+        
+        # Extract full description
+        description = ""
+        desc_selectors = ['.product-description', '.entry-content', '.description', '.summary']
+        for selector in desc_selectors:
+            element = soup.select_one(selector)
+            if element:
+                description = element.get_text(strip=True)[:1000]  # Limit length
+                break
+        
+        product_data = {
+            'url': product_url,
+            'name': name,
+            'category': category,
+            'msp': msp,
+            'short_description': short_description,
+            'description': description,
+            'prices': prices,
+            'specifications': specifications,
+            'features': features,
+            'images': images,
+            'scraped_at': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        return product_data
+
     def extract_product_details_with_firecrawl(self, product_url: str) -> Optional[Dict]:
         """Extract detailed product information using Firecrawl enhanced scraping"""
         if not self.firecrawl:
@@ -565,6 +666,65 @@ class AlaskaScraper:
             print(f"Error with Firecrawl enhanced scraping for {product_url}: {e}")
             return None
     
+    def extract_product_details_with_firecrawl_parallel(self, product_url: str) -> Optional[Dict]:
+        """Thread-safe version of Firecrawl extraction"""
+        if not self.firecrawl:
+            return None
+            
+        print(f"Extracting details with Firecrawl from: {product_url}")
+        
+        # Rate limiting
+        self.rate_limiter.get()
+        
+        try:
+            extraction_prompt = """
+            Please extract and structure the following information from this Alaska product page:
+            
+            1. Product name and model
+            2. Product category 
+            3. MSP/product code (usually after "MSP:")
+            4. All features from short description section (Mô tả ngắn)
+            5. Regional pricing (MIỀN BẮC, MIỀN TRUNG, MIỀN NAM)
+            6. Technical specifications (THÔNG SỐ KỸ THUẬT)
+            7. Store/document links
+            8. Warranty information
+            
+            Format as structured JSON following the schema provided.
+            """
+            
+            # Use scrape_url with extraction parameters
+            result = self.firecrawl.scrape_url(
+                product_url, 
+                params={
+                    'formats': ['extract'],
+                    'extract': {
+                        'prompt': extraction_prompt,
+                        'schema': AlaskaProduct.model_json_schema()
+                    }
+                }
+            )
+            
+            if result and result.get('extract'):
+                extracted_data = result['extract']
+                
+                # Add timestamp and URL
+                extracted_data['scraped_at'] = time.strftime('%Y-%m-%d %H:%M:%S')  
+                extracted_data['url'] = product_url
+                
+                # Add delay to respect server
+                time.sleep(0.5)
+                return extracted_data
+            else:
+                print(f"Firecrawl enhanced scraping failed for {product_url}")
+                return None
+                
+        except Exception as e:
+            print(f"Error with Firecrawl enhanced scraping for {product_url}: {e}")
+            return None
+        finally:
+            # Release rate limiter
+            self.rate_limiter.put(1)
+
     def extract_product_urls_with_firecrawl(self, page_url: str) -> List[str]:
         """Extract product URLs from listing page using Firecrawl enhanced scraping"""
         if not self.firecrawl:
@@ -614,48 +774,60 @@ class AlaskaScraper:
             return []
     
     def scrape_all_products(self) -> List[Dict]:
-        """Scrape all products from Alaska.vn"""
+        """Scrape all products from Alaska.vn using parallel processing"""
         print("Getting all product URLs...")
         product_urls = self.get_all_product_urls()
         print(f"Found {len(product_urls)} total products")
         
         all_products = []
+        successful_count = 0
+        failed_count = 0
         
-        for i, url in enumerate(product_urls, 1):
-            print(f"Processing product {i}/{len(product_urls)}")
+        print(f"Starting parallel processing with {self.max_workers} workers...")
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks
+            future_to_url = {}
+            for url in product_urls:
+                future = executor.submit(self._scrape_single_product_worker, url)
+                future_to_url[future] = url
             
-            # Try Firecrawl extract first, fallback to manual extraction
-            product_data = None
-            if self.firecrawl:
-                product_data = self.extract_product_details_with_firecrawl(url)
-                if not product_data:  # Fallback if Firecrawl fails
-                    print("Firecrawl extraction failed, falling back to manual extraction")
-                    product_data = self.extract_product_details(url)
-            else:
-                product_data = self.extract_product_details(url)
-            
-            if product_data:
-                all_products.append(product_data)
-                print(f"✓ Extracted: {product_data.get('name', 'Unknown')} (MSP: {product_data.get('msp', 'N/A')})")
-            else:
-                print(f"✗ Failed to extract data from {url}")
-            
-            # Be respectful to the server
-            time.sleep(2)
+            # Process completed tasks
+            for i, future in enumerate(as_completed(future_to_url), 1):
+                url = future_to_url[future]
+                try:
+                    product_data = future.result()
+                    if product_data:
+                        all_products.append(product_data)
+                        successful_count += 1
+                        print(f"✓ [{i}/{len(product_urls)}] Extracted: {product_data.get('name', 'Unknown')} (MSP: {product_data.get('msp', 'N/A')})")
+                    else:
+                        failed_count += 1
+                        print(f"✗ [{i}/{len(product_urls)}] Failed to extract data from {url}")
+                        
+                except Exception as e:
+                    failed_count += 1
+                    print(f"✗ [{i}/{len(product_urls)}] Error processing {url}: {e}")
+        
+        print(f"\nScraping completed!")
+        print(f"✓ Successful: {successful_count}")
+        print(f"✗ Failed: {failed_count}")
+        print(f"Total: {len(product_urls)}")
         
         return all_products
     
-    def scrape_single_product(self, product_url: str) -> Optional[Dict]:
-        """Scrape a single product for testing using best available method"""
+    def _scrape_single_product_worker(self, product_url: str) -> Optional[Dict]:
+        """Worker method for scraping a single product (used by parallel processing)"""
         # Try Firecrawl extract first, fallback to manual extraction
+        product_data = None
         if self.firecrawl:
-            product_data = self.extract_product_details_with_firecrawl(product_url)
-            if product_data:
-                return product_data
-            else:
-                print("Firecrawl extraction failed, falling back to manual extraction")
+            product_data = self.extract_product_details_with_firecrawl_parallel(product_url)
+            if not product_data:  # Fallback if Firecrawl fails
+                product_data = self.extract_product_details_parallel(product_url)
+        else:
+            product_data = self.extract_product_details_parallel(product_url)
         
-        return self.extract_product_details(product_url)
+        return product_data
     
     def export_to_json(self, products: List[Dict], filename: str = 'alaska_products.json'):
         """Export products data to JSON file"""
@@ -669,16 +841,34 @@ def main():
     """Main function to run the scraper"""
     import sys
     
-    # Initialize scraper (add your Firecrawl API key if you have one)
-    scraper = AlaskaScraper()
+    # Check for worker count argument
+    max_workers = 5  # default
+    if '--workers' in sys.argv:
+        try:
+            worker_index = sys.argv.index('--workers')
+            if worker_index + 1 < len(sys.argv):
+                max_workers = int(sys.argv[worker_index + 1])
+                max_workers = max(1, min(max_workers, 10))  # Limit between 1-10
+        except (ValueError, IndexError):
+            print("Invalid worker count, using default: 5")
+    
+    # Initialize scraper with specified worker count
+    scraper = AlaskaScraper(max_workers=max_workers)
     
     # Check command line arguments
     if len(sys.argv) > 1 and sys.argv[1] == '--full':
         # Full crawl mode
-        print("Starting full Alaska.vn product scraping...")
+        print(f"Starting full Alaska.vn product scraping with {max_workers} parallel workers...")
+        start_time = time.time()
         all_products = scraper.scrape_all_products()
+        end_time = time.time()
+        
         scraper.export_to_json(all_products, 'alaska_products.json')
-        print(f"Scraping completed! Total products: {len(all_products)}")
+        
+        print(f"\nScraping completed in {end_time - start_time:.2f} seconds!")
+        print(f"Total products: {len(all_products)}")
+        print(f"Average time per product: {(end_time - start_time) / len(all_products) if all_products else 0:.2f} seconds")
+        
     else:
         # Test mode (default)
         test_urls = [
@@ -686,19 +876,24 @@ def main():
             "https://alaska.vn/tu-mat-2-canh-lc-800c/"
         ]
         
-        print("Testing with sample products...")
+        print(f"Testing with sample products using {max_workers} workers...")
         test_products = []
-        for url in test_urls:
-            product = scraper.scrape_single_product(url)
-            if product:
-                test_products.append(product)
-                print(f"✓ Test successful: {product['name']} (MSP: {product['msp']})")
+        
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(test_urls))) as executor:
+            futures = [executor.submit(scraper._scrape_single_product_worker, url) for url in test_urls]
+            
+            for future in as_completed(futures):
+                product = future.result()
+                if product:
+                    test_products.append(product)
+                    print(f"✓ Test successful: {product['name']} (MSP: {product['msp']})")
         
         # Export test results
         if test_products:
             scraper.export_to_json(test_products, 'test_products.json')
         
-        print("\nTo run full crawl, use: python alaska_scraper.py --full")
+        print(f"\nTo run full crawl with {max_workers} workers, use: python alaska_scraper.py --full")
+        print("To change worker count, use: python alaska_scraper.py --full --workers 3")
 
 
 if __name__ == "__main__":

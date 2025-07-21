@@ -1,0 +1,79 @@
+{
+  "main_navigation": [
+    {
+      "name": "Giới thiệu",
+      "url": "https://alaska.vn/ve-chung-toi/",
+      "sub_items": [
+        {
+          "name": "Video clip",
+          "url": "https://alaska.vn/video-clip/",
+          "sub_items": []
+        },
+        {
+          "name": "Tuyển dụng",
+          "url": "https://alaska.vn/recruitment/",
+          "sub_items": []
+        },
+        {
+          "name": "Thông cáo báo chí",
+          "url": "https://alaska.vn/category/thong-cao-bao-chi/",
+          "sub_items": []
+        }
+      ]
+    },
+    {
+      "name": "Hỗ trợ khách hàng",
+      "url": "https://alaska.vn/",
+      "sub_items": [
+        {
+          "name": "Catalogue",
+          "url": "https://alaska.vn/catalogue/",
+          "sub_items": []
+        },
+        {
+          "name": "Trung tâm bảo hành",
+          "url": "https://alaska.vn/trung-tam-bao-hanh/",
+          "sub_items": []
+        },
+        {
+          "name": "Hỏi đáp",
+          "url": "https://alaska.vn/question/",
+          "sub_items": []
+        }
+      ]
+    },
+    {
+      "name": "Dự án",
+      "url": "https://alaska.vn/project/",
+      "sub_items": []
+    },
+    {
+      "name": "Tin tức",
+      "url": "https://alaska.vn/tin-tuc/",
+      "sub_items": []
+    },
+    {
+      "name": "Liên hệ",
+      "url": "https://alaska.vn/lien-he-alaska/",
+      "sub_items": []
+    }
+  ],
+  "header_elements": {
+    "logo_url": null,
+    "logo_link": null,
+    "social_links": [
+      {
+        "platform": "Facebook",
+        "url": "https://www.facebook.com/alaska.com.vn",
+        "text": ""
+      }
+    ],
+    "language_options": [
+      "EN-US",
+      "VI"
+    ],
+    "contact_info": {}
+  },
+  "scraped_at": "2025-07-21 16:45:46",
+  "source_url": "https://alaska.vn/"
+}

@@ -1,85 +1,90 @@
 [
   {
-    "url": "https://alaska.vn/tu-mat-lc-535c/",
     "name": "Tủ Mát LC-535C",
-    "category": "Tủ mát 1 cửa",
+    "category": "Tủ mát",
     "msp": "LC-535C",
-    "prices": {
-      "MIỀN BẮC": "18,980,000 VNĐ",
-      "MIỀN TRUNG": "18,860,000 VNĐ",
-      "MIỀN NAM": "18,260,000 VNĐ"
-    },
-    "specifications": {
-      "Kích thước": "(DxRxC)mm",
-      "Trọng lượng": "83kg",
-      "Dung tích": "525L",
-      "Nhiệt độ": "1~10ºC",
-      "Công suất": "310W",
-      "Gas": "R134a, thân thiện với môi trường Hệ thống tự động ngắt điện […]",
-      "Bảo hành": "Tải E-catalogue",
-      "Refrigerant": "R134a",
-      "Temperature": "1~10ºC",
-      "Power": "310W",
-      "Voltage": "220~240V/50Hz"
-    },
-    "features": [
-      "535C - Alaska",
-      "THƯƠNG MẠI HÒA BÌNH"
+    "short_description_features": [
+      "Công suất 310W",
+      "Cửa kính tự đóng",
+      "Cửa kính 2 lớp chống đọng sương",
+      "Dàn lạnh ống đồng nhanh lạnh, siêu bền",
+      "Hệ thống đèn LED. Tủ có khóa an toàn",
+      "Hệ thống sưởi kính bằng hơi nóng từ compressor",
+      "Sử dụng gas R134a, thân thiện với môi trường",
+      "Hệ thống tự động ngắt điện khi cửa mở nhằm tiết kiệm điện năng",
+      "Tủ mát được trang bị 4 bánh xe, 2 bánh trước có khóa",
+      "Máy nén sản xuất theo công nghệ hiện đại"
     ],
-    "description": "",
+    "prices": {
+      "MIỀN BẮC": "18.980.000 VNĐ",
+      "MIỀN TRUNG": "18.860.000 VNĐ",
+      "MIỀN NAM": "18.260.000 VNĐ"
+    },
+    "technical_specs": {
+      "Model": "LC-535C",
+      "Kích thước (DxRxC)mm": "700x690x2079",
+      "Nhiệt độ": "1~10ºC",
+      "Trọng lượng": "83kg",
+      "Gas": "R134A",
+      "Dòng điện": "220~240V/50Hz",
+      "Công suất": "310W",
+      "Dung tích": "525L"
+    },
+    "store_locator_link": "https://alaska.vn/lien-he-alaska/",
+    "document_download_link": "https://alaska.vn/catalogue/",
     "images": [
       "https://alaska.vn/wp-content/uploads/2025/05/LC-535C-2-w.jpg",
       "https://alaska.vn/wp-content/uploads/2025/05/LC-535C-3-w.jpg",
       "https://alaska.vn/wp-content/uploads/2025/05/LC-535C-1-w.jpg",
       "https://alaska.vn/wp-content/uploads/2025/05/LC-535C-4-w.jpg",
       "https://alaska.vn/wp-content/uploads/2022/09/lc-833c-4-w.jpeg",
-      "https://alaska.vn/wp-content/uploads/2021/06/lc-833c-6-w.jpeg",
-      "https://alaska.vn/wp-content/uploads/2023/11/BCD-5568CI-2023-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2021/06/BD-400CI-3-22-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2023/09/LC-800C-3-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/06/a11ro-1.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/09/if-39.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/06/LC-555H-3-new-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/kc-210ci-1-w.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/09/kw-35c.-1.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/sm-25_web-1.jpeg",
-      "https://alaska.vn/wp-content/uploads/2021/06/1tu-mat-inox-t-15cg-1-1.jpg",
-      "https://alaska.vn/wp-content/uploads/2021/06/bep-hong-ngoại-cp-14d-04_.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/1r80-80c-web.jpeg",
-      "https://images.dmca.com/Badges/_dmca_premi_badge_2.png?ID=680a080c-9fd5-4efc-a4a1-af2ad5f108d3",
-      "https://alaska.vn/wp-content/uploads/2021/06/notifi-bct.jpg"
+      "https://alaska.vn/wp-content/uploads/2021/06/lc-833c-6-w.jpeg"
     ],
-    "scraped_at": "2025-07-21 10:00:55"
+    "full_description": "",
+    "warranty_info": "",
+    "scraped_at": "2025-07-21 16:05:38",
+    "url": "https://alaska.vn/tu-mat-lc-535c/"
   },
   {
-    "url": "https://alaska.vn/tu-mat-2-canh-lc-800c/",
     "name": "Tủ mát 2 cánh LC-800C",
-    "category": "Tủ mát 2 cánh mở ngang",
+    "category": "Tủ mát",
     "msp": "LC-800C",
-    "prices": {
-      "MIỀN BẮC": "27,530,000 VNĐ",
-      "MIỀN TRUNG": "27,300,000 VNĐ",
-      "MIỀN NAM": "26,630,000 VNĐ"
-    },
-    "specifications": {
-      "Kích thước": "(DxRxC)mm",
-      "Trọng lượng": "113kg",
-      "Dung tích": "800L",
-      "Nhiệt độ": "0-10ºC",
-      "Công suất": "450W, thuận tiện cho người tiêu dùng trưng bày số lượng lớn hàng hóa",
-      "Gas": "R134A",
-      "Bảo hành": "Tải E-catalogue",
-      "Refrigerant": "R134A",
-      "Power": "450W",
-      "Voltage": "220V/50Hz"
-    },
-    "features": [
-      "800C - Alaska",
-      "E hạn chế việc đọng sương trên cửa kính",
-      "800C là chiếc tủ mát có công suất 450W, thuận tiện cho người tiêu dùng trưng bày số lượng lớn hàng hóa",
-      "THƯƠNG MẠI HÒA BÌNH"
+    "short_description_features": [
+      "Công suất 450W",
+      "Tủ mát 2 cánh mở ngang",
+      "Cửa kính tự đóng",
+      "Lòng tủ nhôm sơn tĩnh điện",
+      "Hệ thống sưởi kính bằng hơi nóng từ compressor",
+      "Dàn lạnh ống đồng nhanh lạnh, siêu bền",
+      "Hệ thống đèn LED. Tủ có khóa an toàn",
+      "Sử dụng gas R134a, thân thiện với môi trường",
+      "Hệ thống xử lý nước thừa ở khay chứa làm bay hơi",
+      "Tủ mát được trang bị 4 bánh xe, 2 bánh trước có khóa",
+      "Cửa kính 2 lớp theo công nghệ Low-E hạn chế việc đọng sương trên cửa kính",
+      "Hệ thống tự động ngắt điện khi cửa mở nhằm tiết kiệm điện năng",
+      "Máy nén sản xuất theo công nghệ hiện đại"
     ],
-    "description": "",
+    "prices": {
+      "MIỀN BẮC": "27.530.000 VNĐ",
+      "MIỀN TRUNG": "27.300.000 VNĐ",
+      "MIỀN NAM": "26.630.000 VNĐ"
+    },
+    "technical_specs": {
+      "Model": "LC-800C",
+      "Kích thước (DxRxC)mm": "1125x610x1980",
+      "Cấu trúc": "Tủ mát 2 cửa mở",
+      "Trọng lượng": "113kg",
+      "Nhiệt độ": "0-10ºC",
+      "Gas": "R134A",
+      "Công suất": "450W",
+      "Dòng điện": "220V/50Hz",
+      "Đèn": "Đèn LED trên hộp đèn và trong thân tủ",
+      "Chất liệu lòng tủ": "nhôm, màu trắng",
+      "Kệ": "8 kệ, bằng thép phủ nhựa",
+      "Dung tích": "800L"
+    },
+    "store_locator_link": "https://alaska.vn/lien-he-alaska/",
+    "document_download_link": "https://alaska.vn/catalogue/",
     "images": [
       "https://alaska.vn/wp-content/uploads/2023/09/LC-800C-3-w.jpg",
       "https://alaska.vn/wp-content/uploads/2023/09/LC-800C-1-W.jpg",
@@ -88,21 +93,11 @@
       "https://alaska.vn/wp-content/uploads/2022/09/sl-8c-8-w-1.jpeg",
       "https://alaska.vn/wp-content/uploads/2022/09/sl-8c-7-w-2.jpeg",
       "https://alaska.vn/wp-content/uploads/2022/09/sl-8c-10-w-1.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/09/sl-8c-11-w.jpeg",
-      "https://alaska.vn/wp-content/uploads/2023/11/BCD-5568CI-2023-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2021/06/BD-400CI-3-22-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/06/a11ro-1.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/09/if-39.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/06/LC-555H-3-new-w.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/kc-210ci-1-w.jpeg",
-      "https://alaska.vn/wp-content/uploads/2022/09/kw-35c.-1.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/sm-25_web-1.jpeg",
-      "https://alaska.vn/wp-content/uploads/2021/06/1tu-mat-inox-t-15cg-1-1.jpg",
-      "https://alaska.vn/wp-content/uploads/2021/06/bep-hong-ngoại-cp-14d-04_.jpg",
-      "https://alaska.vn/wp-content/uploads/2022/09/1r80-80c-web.jpeg",
-      "https://images.dmca.com/Badges/_dmca_premi_badge_2.png?ID=680a080c-9fd5-4efc-a4a1-af2ad5f108d3",
-      "https://alaska.vn/wp-content/uploads/2021/06/notifi-bct.jpg"
+      "https://alaska.vn/wp-content/uploads/2022/09/sl-8c-11-w.jpeg"
     ],
-    "scraped_at": "2025-07-21 10:00:56"
+    "full_description": "LC-800C là chiếc tủ mát có công suất 450W, thuận tiện cho người tiêu dùng trưng bày số lượng lớn hàng hóa",
+    "warranty_info": "",
+    "scraped_at": "2025-07-21 16:06:00",
+    "url": "https://alaska.vn/tu-mat-2-canh-lc-800c/"
   }
 ]
