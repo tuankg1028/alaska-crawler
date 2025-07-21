@@ -12,13 +12,64 @@ from urllib.parse import urljoin, urlparse
 from firecrawl import FirecrawlApp
 import requests
 from bs4 import BeautifulSoup
+from pydantic import BaseModel, Field
+import os
+
+
+class AlaskaProduct(BaseModel):
+    """Comprehensive schema for Alaska product data"""
+    name: str = Field(description="Product name/model")
+    category: str = Field(description="Product category")
+    msp: str = Field(description="Product code/MSP")
+    short_description_features: List[str] = Field(
+        description="All features from the short description section (Mô tả ngắn)",
+        default_factory=list
+    )
+    prices: Dict[str, str] = Field(
+        description="Regional pricing (MIỀN BẮC, MIỀN TRUNG, MIỀN NAM)",
+        default_factory=dict
+    )
+    technical_specs: Dict[str, str] = Field(
+        description="Complete technical specifications (THÔNG SỐ KỸ THUẬT)",
+        default_factory=dict
+    )
+    characteristics: List[str] = Field(
+        description="Product characteristics (Các Đặc Tính)",
+        default_factory=list
+    )
+    store_locator_link: Optional[str] = Field(
+        description="Link to store locator (Tìm điểm bán hàng)",
+        default=None
+    )
+    document_download_link: Optional[str] = Field(
+        description="Link to document download (Tải tài liệu)",
+        default=None
+    )
+    images: List[str] = Field(
+        description="List of product image URLs",
+        default_factory=list
+    )
+    full_description: str = Field(
+        description="Complete product description",
+        default=""
+    )
+    warranty_info: str = Field(
+        description="Warranty information",
+        default=""
+    )
+    scraped_at: str = Field(description="Timestamp of scraping")
 
 
 class AlaskaScraper:
     def __init__(self, api_key: Optional[str] = None):
         """Initialize the scraper with Firecrawl API key"""
+        # Try to get API key from parameter, environment, or default to None
+        if not api_key:
+            api_key = os.getenv('FIRECRAWL_API_KEY')
+        
         if api_key:
             self.firecrawl = FirecrawlApp(api_key=api_key)
+            print("Initialized with Firecrawl API - using extract feature")
         else:
             self.firecrawl = None
             print("Warning: No Firecrawl API key provided. Using fallback scraping method.")
@@ -53,26 +104,41 @@ class AlaskaScraper:
         soup = BeautifulSoup(content, 'html.parser')
         product_urls = []
         
-        # Find product links - look for specific patterns
-        product_links = soup.find_all('a', href=True)
+        # Find the products container
+        products_container = soup.find('div', class_='row products')
+        if not products_container:
+            return []
         
-        for link in product_links:
-            href = link.get('href')
-            if href:
-                # Skip non-product links
-                if any(skip in href for skip in ['/page/', '/category/', '/tag/', 'javascript:', 'mailto:', 'tel:', '#']):
-                    continue
-                
-                # Product URLs typically end with a slug and slash
-                if re.match(r'^/[a-zA-Z0-9-]+/$', href) or 'product' in href:
-                    full_url = urljoin(self.base_url, href)
-                    if full_url not in product_urls and full_url != self.base_url + '/':
-                        product_urls.append(full_url)
+        # Find all product items within the container
+        product_items = products_container.find_all('div', class_='item')
+        
+        for item in product_items:
+            # Look for product links within each item
+            product_links = item.find_all('a', href=True)
+            
+            for link in product_links:
+                href = link.get('href')
+                if href:
+                    # Skip non-product links
+                    if any(skip in href for skip in ['/page/', '/category/', '/tag/', 'javascript:', 'mailto:', 'tel:', '#']):
+                        continue
+                    
+                    # Make sure it's a full URL
+                    full_url = urljoin(self.base_url, href) if href.startswith('/') else href
+                    
+                    # Check if it's a product URL (contains specific patterns)
+                    if (full_url.startswith(self.base_url) and 
+                        full_url != self.base_url + '/' and
+                        full_url != page_url and
+                        not any(skip in full_url for skip in ['/page/', '/category/', '/tag/'])):
+                        
+                        if full_url not in product_urls:
+                            product_urls.append(full_url)
         
         return product_urls
     
     def get_all_product_urls(self) -> List[str]:
-        """Get all product URLs from all listing pages"""
+        """Get all product URLs from all listing pages using best available method"""
         all_urls = []
         page = 1
         
@@ -83,7 +149,15 @@ class AlaskaScraper:
                 page_url = f"{self.products_url}page/{page}/"
             
             print(f"Scraping page {page}: {page_url}")
-            urls = self.extract_product_urls_from_listing(page_url)
+            
+            # Try Firecrawl extract first, fallback to manual extraction
+            if self.firecrawl:
+                urls = self.extract_product_urls_with_firecrawl(page_url)
+                if not urls:  # Fallback if Firecrawl fails
+                    print("Firecrawl extraction failed, falling back to manual extraction")
+                    urls = self.extract_product_urls_from_listing(page_url)
+            else:
+                urls = self.extract_product_urls_from_listing(page_url)
             
             if not urls:
                 print(f"No more products found on page {page}")
@@ -96,8 +170,8 @@ class AlaskaScraper:
             time.sleep(1)  # Be respectful to the server
             
             # Safety limit
-            if page > 50:
-                print("Reached maximum page limit (50)")
+            if page > 30:
+                print("Reached maximum page limit (30)")
                 break
         
         return list(set(all_urls))  # Remove duplicates
@@ -327,6 +401,56 @@ class AlaskaScraper:
         
         return images
     
+    def extract_short_description(self, soup: BeautifulSoup) -> str:
+        """Extract short description (Mô tả ngắn)"""
+        short_description = ""
+        
+        # Look for various patterns that might contain short description
+        short_desc_selectors = [
+            '.short-description',
+            '.product-short-description', 
+            '.excerpt',
+            '.summary .excerpt',
+            '.woocommerce-product-details__short-description',
+            '[class*="short"]',
+            '.entry-summary .excerpt'
+        ]
+        
+        for selector in short_desc_selectors:
+            element = soup.select_one(selector)
+            if element:
+                short_description = element.get_text(strip=True)
+                if short_description and len(short_description) > 20:  # Make sure it's substantial
+                    break
+        
+        # If no dedicated short description found, look for first paragraph in content
+        if not short_description:
+            content_selectors = ['.entry-content', '.product-content', '.content']
+            for selector in content_selectors:
+                element = soup.select_one(selector)
+                if element:
+                    # Get first paragraph
+                    first_p = element.find('p')
+                    if first_p:
+                        text = first_p.get_text(strip=True)
+                        if text and len(text) > 20 and len(text) < 500:
+                            short_description = text
+                            break
+        
+        # Alternative: look for text patterns in the full content
+        if not short_description:
+            text_content = soup.get_text()
+            lines = text_content.split('\n')
+            for line in lines:
+                line = line.strip()
+                # Look for lines that might be short descriptions
+                if (line and len(line) > 20 and len(line) < 300 and 
+                    not any(skip in line.upper() for skip in ['GIÁ', 'MIỀN', 'VNĐ', 'MSP:', 'KÍCHước', 'TRỌNG LƯỢNG'])):
+                    short_description = line
+                    break
+        
+        return short_description[:500]  # Limit to reasonable length
+    
     def extract_product_details(self, product_url: str) -> Optional[Dict]:
         """Extract detailed product information from a product page"""
         print(f"Extracting details from: {product_url}")
@@ -359,8 +483,9 @@ class AlaskaScraper:
         specifications = self.extract_specifications(soup)
         features = self.extract_features(soup)
         images = self.extract_images(soup)
+        short_description = self.extract_short_description(soup)
         
-        # Extract description
+        # Extract full description
         description = ""
         desc_selectors = ['.product-description', '.entry-content', '.description', '.summary']
         for selector in desc_selectors:
@@ -374,15 +499,119 @@ class AlaskaScraper:
             'name': name,
             'category': category,
             'msp': msp,
+            'short_description': short_description,
+            'description': description,
             'prices': prices,
             'specifications': specifications,
             'features': features,
-            'description': description,
             'images': images,
             'scraped_at': time.strftime('%Y-%m-%d %H:%M:%S')
         }
         
         return product_data
+    
+    def extract_product_details_with_firecrawl(self, product_url: str) -> Optional[Dict]:
+        """Extract detailed product information using Firecrawl enhanced scraping"""
+        if not self.firecrawl:
+            return None
+            
+        print(f"Extracting details with Firecrawl from: {product_url}")
+        
+        try:
+            # Use Firecrawl scrape_url with extraction instructions
+            # Note: The extract feature may not be available in current SDK version
+            # Using enhanced scraping with structured extraction prompt
+            
+            extraction_prompt = """
+            Please extract and structure the following information from this Alaska product page:
+            
+            1. Product name and model
+            2. Product category 
+            3. MSP/product code (usually after "MSP:")
+            4. All features from short description section (Mô tả ngắn)
+            5. Regional pricing (MIỀN BẮC, MIỀN TRUNG, MIỀN NAM)
+            6. Technical specifications (THÔNG SỐ KỸ THUẬT)
+            7. Store/document links
+            8. Warranty information
+            
+            Format as structured JSON following the schema provided.
+            """
+            
+            # Use scrape_url with extraction parameters
+            result = self.firecrawl.scrape_url(
+                product_url, 
+                params={
+                    'formats': ['extract'],
+                    'extract': {
+                        'prompt': extraction_prompt,
+                        'schema': AlaskaProduct.model_json_schema()
+                    }
+                }
+            )
+            
+            if result and result.get('extract'):
+                extracted_data = result['extract']
+                
+                # Add timestamp and URL
+                extracted_data['scraped_at'] = time.strftime('%Y-%m-%d %H:%M:%S')  
+                extracted_data['url'] = product_url
+                
+                return extracted_data
+            else:
+                print(f"Firecrawl enhanced scraping failed for {product_url}")
+                return None
+                
+        except Exception as e:
+            print(f"Error with Firecrawl enhanced scraping for {product_url}: {e}")
+            return None
+    
+    def extract_product_urls_with_firecrawl(self, page_url: str) -> List[str]:
+        """Extract product URLs from listing page using Firecrawl enhanced scraping"""
+        if not self.firecrawl:
+            return []
+            
+        try:
+            # Create URL extraction prompt
+            url_extraction_prompt = """
+            Extract all individual product URLs from this Alaska.vn product listing page.
+            Look for links to specific products (not category or navigation links).
+            Return only the complete URLs to individual product pages.
+            """
+            
+            # Simple schema for URL extraction
+            url_schema = {
+                "type": "object",
+                "properties": {
+                    "product_urls": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of product page URLs"
+                    }
+                }
+            }
+            
+            # Use scrape_url with extraction parameters
+            result = self.firecrawl.scrape_url(
+                page_url,
+                params={
+                    'formats': ['extract'],
+                    'extract': {
+                        'prompt': url_extraction_prompt,
+                        'schema': url_schema
+                    }
+                }
+            )
+            
+            if result and result.get('extract'):
+                extracted_data = result['extract']
+                return extracted_data.get('product_urls', [])
+            else:
+                print(f"Firecrawl URL extraction failed for {page_url}")
+                return []
+                
+        except Exception as e:
+            print(f"Error with Firecrawl URL extraction for {page_url}: {e}")
+            return []
     
     def scrape_all_products(self) -> List[Dict]:
         """Scrape all products from Alaska.vn"""
@@ -395,7 +624,16 @@ class AlaskaScraper:
         for i, url in enumerate(product_urls, 1):
             print(f"Processing product {i}/{len(product_urls)}")
             
-            product_data = self.extract_product_details(url)
+            # Try Firecrawl extract first, fallback to manual extraction
+            product_data = None
+            if self.firecrawl:
+                product_data = self.extract_product_details_with_firecrawl(url)
+                if not product_data:  # Fallback if Firecrawl fails
+                    print("Firecrawl extraction failed, falling back to manual extraction")
+                    product_data = self.extract_product_details(url)
+            else:
+                product_data = self.extract_product_details(url)
+            
             if product_data:
                 all_products.append(product_data)
                 print(f"✓ Extracted: {product_data.get('name', 'Unknown')} (MSP: {product_data.get('msp', 'N/A')})")
@@ -408,7 +646,15 @@ class AlaskaScraper:
         return all_products
     
     def scrape_single_product(self, product_url: str) -> Optional[Dict]:
-        """Scrape a single product for testing"""
+        """Scrape a single product for testing using best available method"""
+        # Try Firecrawl extract first, fallback to manual extraction
+        if self.firecrawl:
+            product_data = self.extract_product_details_with_firecrawl(product_url)
+            if product_data:
+                return product_data
+            else:
+                print("Firecrawl extraction failed, falling back to manual extraction")
+        
         return self.extract_product_details(product_url)
     
     def export_to_json(self, products: List[Dict], filename: str = 'alaska_products.json'):
